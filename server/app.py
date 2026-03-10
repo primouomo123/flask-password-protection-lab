@@ -36,8 +36,57 @@ class Signup(Resource):
 
         return user_dict, 201
 
+
+
+class CheckSession(Resource):
+
+    def get(self):
+
+        if session.get('user_id'):
+            user = User.query.filter_by(id=session['user_id']).first()
+            user_schema = UserSchema()
+            user_dict = user_schema.dump(user)
+
+            return user_dict, 200
+
+        else:
+            return {}, 204
+
+
+
+class Login(Resource):
+
+    def post(self):
+
+        data = request.get_json()
+
+        user = User.query.filter_by(username=data['username']).first()
+
+        if user and user.authenticate(data['password']):
+            session['user_id'] = user.id
+            user_schema = UserSchema()
+            user_dict = user_schema.dump(user)
+
+            return user_dict, 200
+
+        else:
+            return {}, 401
+
+
+
+class Logout(Resource):
+
+    def delete(self):
+
+        session['user_id'] = None
+
+        return {}, 204
+
 api.add_resource(ClearSession, '/clear', endpoint='clear')
 api.add_resource(Signup, '/signup', endpoint='signup')
+api.add_resource(CheckSession, '/check_session', endpoint='check_session')
+api.add_resource(Login, '/login', endpoint='login')
+api.add_resource(Logout, '/logout', endpoint='logout')
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
